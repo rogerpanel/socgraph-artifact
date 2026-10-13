@@ -2,7 +2,7 @@
 
 Code, benchmark, results and manuscript for:
 
-> **Robust LLM Agents for Provenance-Graph Alert Triage: Grounding, Budgets, and Shortcut Cues**
+> **Right for the Wrong Names: Mimicry Evasion of LLM Agents in Provenance-Graph Alert Triage**
 > Anonymous Authors, 2026 (manuscript under review).
 
 A security operations centre (SOC) analyst who receives an alert walks the
@@ -27,6 +27,8 @@ Claude Opus 5.5, effort high, SOCGraph-21 v1.1, three repeats (`results/`, paper
 | No investigation-method prompt | 0.737 ± 0.022 | 0.830 | 0.432 | 94% (59/63) | 0 | 11.70 |
 | Full agent, `blind` variant (label cues removed) | 0.769 ± 0.007 | 0.836 | 0.586 | 95% | 0 | 9.00 |
 | Full agent, `mimicry` variant (attacker names renamed) | 0.694 ± 0.038 | 0.754 | 0.572 | 86% | 0 | 9.22 |
+| Same agent with GPT-6 astra, v1.1 | 0.684 ± 0.024 | 0.766 | 0.492 | 84% | 0 | 10.89 |
+| Same agent with GPT-6 astra, `mimicry` | 0.511 ± 0.002 | 0.565 | 0.476 | 62% | 0 | 12.22 |
 
 - The investigation-method prompt is what makes the agent efficient: without
   it, more calls on 20 of the 20 tasks where the count differed (sign test
@@ -47,6 +49,11 @@ Claude Opus 5.5, effort high, SOCGraph-21 v1.1, three repeats (`results/`, paper
   `hidmon.ko`, `atomic_user1` to `jsmith`) raised missed attacks from 2/45 to
   9/45 and cut reward by 0.081 (95% CI −0.179 to −0.007): on dual-use Linux
   behaviour the verdict rested on names the attacker chose (`mimicry`).
+- A second model (GPT-6 astra, same agent) missed 10/45 attacks on v1.1 and
+  24/45 under `mimicry`; its drop under renaming is significantly larger
+  (difference in differences −0.091, 95% CI −0.183 to −0.013). Its traces read
+  the recordings' test artefacts ("atomic testing", "T1543.003 Test") as signs
+  of an authorised exercise, the opposite of the first model.
 
 ## Quick start
 
@@ -91,6 +98,13 @@ python scripts/trace_stats.py --pack benchmark/socgraph-21-v1.1.zip --runs "resu
 python scripts/trace_stats.py --pack benchmark/socgraph-21-v1.1.zip --runs "results/cues/*/" --out paper \
     --prefix TrCue --table cue_interface.tex --macros cue_trace_macros.tex
 python scripts/sensitivity.py --pack benchmark/socgraph-21-v1.1.zip --runs "results/study/*/" --out paper
+python scripts/model_compare.py --pack benchmark/socgraph-21-v1.1.zip \
+    --run "Claude Opus 5.5|v1.1|results/study/r*-full/" \
+    --run "Claude Opus 5.5|mimicry|results/cues/*-full-mimicry/" \
+    --run "GPT-6 astra|v1.1|results/models/*-gpt-6-astra-v1.1/" \
+    --run "GPT-6 astra|mimicry|results/models/*-gpt-6-astra-mimicry/" --out paper
+python scripts/trace_stats.py --pack benchmark/socgraph-21-v1.1.zip --runs "results/models/*/" --out paper \
+    --prefix TrGpt --table gpt_interface.tex --macros gpt_trace_macros.tex
 ```
 
 These commands write every table, figure input and number quoted in the paper to `paper/` (the manuscript itself is submitted separately).
